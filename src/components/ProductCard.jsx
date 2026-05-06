@@ -3,12 +3,19 @@ import ProductCarousel from './ProductCarousel'
 import { ShoppingBag } from 'lucide-react'
 
 const ProductCard = ({ product }) => {
-  const { name, brand, price, images = [] } = product
+  const { name, brand, price, images } = product
+  
+  let parsedImages = []
+  try {
+    parsedImages = typeof images === 'string' ? JSON.parse(images) : (Array.isArray(images) ? images : [])
+  } catch (e) {
+    parsedImages = []
+  }
 
   return (
     <div className="product-card">
       <div className="product-card-image">
-        <ProductCarousel images={images} />
+        <ProductCarousel images={parsedImages} />
       </div>
       <div className="product-card-info">
         <div className="product-card-brand">{brand}</div>
