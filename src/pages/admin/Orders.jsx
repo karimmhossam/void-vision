@@ -1,49 +1,44 @@
 import React, { useState } from 'react'
 import { Printer, Eye, ChevronDown, Search } from 'lucide-react'
 
-const SAMPLE_ORDERS = [
-  {
-    id: 'VV-001',
-    customer: 'Ahmed Khaled',
-    email: 'ahmed.k@example.com',
-    phone: '010 1234 5678',
-    product: 'Radar EV Path',
-    brand: 'Oakley',
-    amount: 4499,
-    status: 'pending',
-    date: '2026-05-06',
-    address: '15 شارع التحرير، الدقي، الجيزة، مصر',
-  },
-  {
-    id: 'VV-002',
-    customer: 'Sara Mostafa',
-    email: 'sara.m@example.com',
-    phone: '012 9876 5432',
-    product: 'SPR 17W Symbole',
-    brand: 'Prada',
-    amount: 5999,
-    status: 'shipped',
-    date: '2026-05-05',
-    address: '42 شارع الهرم، فيصل، الجيزة، مصر',
-  },
-  {
-    id: 'VV-003',
-    customer: 'Omar Gamal',
-    email: 'omar.g@example.com',
-    phone: '011 5555 9999',
-    product: 'Millionaires',
-    brand: 'Louis Vuitton',
-    amount: 9999,
-    status: 'delivered',
-    date: '2026-05-04',
-    address: '8 شارع النصر، مدينة نصر، القاهرة، مصر',
-  },
-]
+
 
 const Orders = () => {
-  const [orders] = useState(SAMPLE_ORDERS)
+  const [orders, setOrders] = useState([])
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [filterStatus, setFilterStatus] = useState('all')
+
+  const fetchOrders = async () => {
+    try {
+      const res = await fetch('/api/orders')
+      const data = await res.json()
+      if (res.ok) setOrders(data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  React.useEffect(() => {
+    fetchOrders()
+  }, [])
+
+  const updateOrderStatus = async (id, newStatus) => {
+    try {
+      const res = await fetch(`/api/orders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+      if (res.ok) {
+        setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o))
+        if (selectedOrder && selectedOrder.id === id) {
+            setSelectedOrder(prev => ({ ...prev, status: newStatus }))
+        }
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   const filteredOrders = filterStatus === 'all'
     ? orders
@@ -173,7 +168,15 @@ const Orders = () => {
                 </div>
                 <div>
                   <span className="form-label">Status</span>
-                  <p><span className={`status-badge ${selectedOrder.status}`}>{selectedOrder.status}</span></p>
+                  <select 
+                    value={selectedOrder.status}
+                    onChange={(e) => updateOrderStatus(selectedOrder.id, e.target.value)}
+                    style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--glass-border)', background: 'var(--surface-accent)', color: 'var(--text)' }}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="delivered">Delivered</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -213,8 +216,8 @@ const Orders = () => {
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{order.brand}</span>
                   <br />{order.product}
                 </td>
-                <td style={{ fontWeight: 700 }}>EGP {order.amount.toLocaleString()}</td>
-                <td style={{ color: 'var(--text-muted)' }}>{order.date}</td>
+                <td style={{ fontWeight: 700 }}>EGP {order.total_price?.toLocaleString()}</td>
+                <td style={{ color: 'var(--text-muted)' }}>{order.created_at?.split(' ')[0]}</td>
                 <td>
                   <span className={`status-badge ${order.status}`}>{order.status}</span>
                 </td>

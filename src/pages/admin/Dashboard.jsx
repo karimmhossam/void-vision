@@ -2,14 +2,30 @@ import React from 'react'
 import { TrendingUp, TrendingDown, Package, ShoppingCart, DollarSign, Users } from 'lucide-react'
 
 const Dashboard = () => {
-  const stats = [
-    { label: 'Revenue', value: '$0.00', change: '+0%', positive: true, icon: DollarSign },
-    { label: 'Orders', value: '0', change: '+0%', positive: true, icon: ShoppingCart },
-    { label: 'Products', value: '6', change: 'Active', positive: true, icon: Package },
-    { label: 'Visitors', value: '0', change: 'Today', positive: true, icon: Users },
-  ]
+  const [productsCount, setProductsCount] = React.useState(0)
+  const [recentOrders, setRecentOrders] = React.useState([])
+  const [revenue, setRevenue] = React.useState(0)
 
-  const recentOrders = []
+  React.useEffect(() => {
+    Promise.all([
+      fetch('/api/products').then(r => r.json()),
+      fetch('/api/orders').then(r => r.json())
+    ]).then(([products, orders]) => {
+      if (Array.isArray(products)) setProductsCount(products.length)
+      if (Array.isArray(orders)) {
+        setRecentOrders(orders.slice(0, 5))
+        const total = orders.reduce((sum, order) => sum + (order.total_price || 0), 0)
+        setRevenue(total)
+      }
+    }).catch(console.error)
+  }, [])
+
+  const stats = [
+    { label: 'Revenue', value: `EGP ${revenue.toLocaleString()}`, change: '+0%', positive: true, icon: DollarSign },
+    { label: 'Orders', value: recentOrders.length.toString(), change: '+0%', positive: true, icon: ShoppingCart },
+    { label: 'Products', value: productsCount.toString(), change: 'Active', positive: true, icon: Package },
+    { label: 'Visitors', value: '1', change: 'Today', positive: true, icon: Users },
+  ]
 
   return (
     <>
@@ -60,9 +76,9 @@ const Dashboard = () => {
               {recentOrders.map((order) => (
                 <tr key={order.id}>
                   <td>#{order.id}</td>
-                  <td>{order.customer}</td>
-                  <td>{order.product}</td>
-                  <td>${order.amount}</td>
+                  <td>{order.customer_name}</td>
+                  <td>{order.product_id}</td>
+                  <td>EGP {order.total_price?.toLocaleString()}</td>
                   <td><span className={`status-badge ${order.status}`}>{order.status}</span></td>
                 </tr>
               ))}

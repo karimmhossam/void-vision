@@ -5,15 +5,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import ProductCard from '../components/ProductCard'
 
-// Using the same sample products for now
-const SAMPLE_PRODUCTS = [
-  { id: 1, name: 'Radar EV Path', brand: 'Oakley', price: 4499, images: [] },
-  { id: 2, name: 'SPR 17W Symbole', brand: 'Prada', price: 5999, images: [] },
-  { id: 3, name: 'Panthère de Cartier', brand: 'Cartier', price: 7499, images: [] },
-  { id: 4, name: 'Hearts IV', brand: 'Chrome Hearts', price: 8999, images: [] },
-  { id: 5, name: 'DL0325', brand: 'Diesel', price: 3499, images: [] },
-  { id: 6, name: 'Millionaires', brand: 'Louis Vuitton', price: 9999, images: [] },
-]
+
 
 const BRANDS = ['All', 'Oakley', 'Prada', 'Cartier', 'Chrome Hearts', 'Diesel', 'Louis Vuitton', 'Lacoste', 'Versace']
 
@@ -32,10 +24,25 @@ const stagger = {
 const ShopPage = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const currentBrand = searchParams.get('brand') || 'All'
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  React.useEffect(() => {
+    fetch('/api/products')
+      .then(res => res.json())
+      .then(data => {
+        setProducts(data)
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error(err)
+        setLoading(false)
+      })
+  }, [])
 
   const filteredProducts = currentBrand === 'All' 
-    ? SAMPLE_PRODUCTS 
-    : SAMPLE_PRODUCTS.filter(p => p.brand.toLowerCase() === currentBrand.toLowerCase())
+    ? products 
+    : products.filter(p => p.brand.toLowerCase() === currentBrand.toLowerCase())
 
   const handleBrandChange = (brand) => {
     if (brand === 'All') {
@@ -96,7 +103,11 @@ const ShopPage = () => {
             </div>
 
             {/* Product Grid */}
-            {filteredProducts.length > 0 ? (
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-dim)' }}>
+                Loading products...
+              </div>
+            ) : filteredProducts.length > 0 ? (
               <motion.div 
                 className="product-grid"
                 variants={stagger}

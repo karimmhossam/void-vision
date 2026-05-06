@@ -7,51 +7,7 @@ import ProductCard from '../components/ProductCard'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
-// Sample products — these will come from D1 database once connected
-const SAMPLE_PRODUCTS = [
-  {
-    id: 1,
-    name: 'Radar EV Path',
-    brand: 'Oakley',
-    price: 4499,
-    images: [],
-  },
-  {
-    id: 2,
-    name: 'SPR 17W Symbole',
-    brand: 'Prada',
-    price: 5999,
-    images: [],
-  },
-  {
-    id: 3,
-    name: 'Panthère de Cartier',
-    brand: 'Cartier',
-    price: 7499,
-    images: [],
-  },
-  {
-    id: 4,
-    name: 'Hearts IV',
-    brand: 'Chrome Hearts',
-    price: 8999,
-    images: [],
-  },
-  {
-    id: 5,
-    name: 'DL0325',
-    brand: 'Diesel',
-    price: 3499,
-    images: [],
-  },
-  {
-    id: 6,
-    name: 'Millionaires',
-    brand: 'Louis Vuitton',
-    price: 9999,
-    images: [],
-  },
-]
+
 
 const BRANDS = ['Oakley', 'Prada', 'Cartier', 'Chrome Hearts', 'Diesel', 'Louis Vuitton', 'Lacoste', 'Versace']
 
@@ -68,6 +24,23 @@ const stagger = {
 }
 
 const HomePage = () => {
+  const [products, setProducts] = React.useState([])
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    fetch('/api/products')
+      .then(res => res.json())
+      .then(data => {
+        // Show only newest 6 arrivals
+        setProducts(data.slice(0, 6))
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error(err)
+        setLoading(false)
+      })
+  }, [])
+
   return (
     <>
       <Navbar />
@@ -130,11 +103,15 @@ const HomePage = () => {
             whileInView="animate"
             viewport={{ once: true, amount: 0.2 }}
           >
-            {SAMPLE_PRODUCTS.map((product) => (
-              <motion.div key={product.id} variants={fadeUp}>
-                <ProductCard product={product} />
-              </motion.div>
-            ))}
+            {loading ? (
+              <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--text-muted)' }}>Loading products...</p>
+            ) : (
+              products.map((product) => (
+                <motion.div key={product.id} variants={fadeUp}>
+                  <ProductCard product={product} />
+                </motion.div>
+              ))
+            )}
           </motion.div>
         </div>
       </section>

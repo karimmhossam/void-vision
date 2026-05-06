@@ -1,9 +1,13 @@
 import { verifyAuth } from '../utils/auth';
 
 export async function onRequestGet(context) {
-  const { env } = context;
+  const { request, env } = context;
+  
+  const authPayload = await verifyAuth(request, env);
+  if (!authPayload) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+
   try {
-    const { results } = await env.DB.prepare('SELECT * FROM products ORDER BY id DESC').all();
+    const { results } = await env.DB.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
     return new Response(JSON.stringify(results), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -15,24 +19,20 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context;
-  
-  // Protect this route
-  const authPayload = await verifyAuth(request, env);
-  if (!authPayload) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-  }
 
+  // This route is public so users can place orders
   try {
     const body = await request.json();
-    const { name, brand, price, description, stock } = body;
+    const { customer_name, customer_email, product_id, total_price, shipping_address } = body;
     
-    if (!name || !brand || price === undefined) {
+    if (!customer_name || !product_id) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
     }
 
+    // Default status is 'pending'
     const stmt = env.DB.prepare(
-      'INSERT INTO products (name, brand, price, description, stock) VALUES (?, ?, ?, ?, ?)'
-    ).bind(name, brand, price, description || '', stock || 0);
+      'INSERT INTO orders (customer_name, customer_email, product_id, total_price, status, shipping_address) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(customer_name, customer_email || '', product_id, total_price || 0, 'pending', shipping_address || '');
     
     const result = await stmt.run();
     

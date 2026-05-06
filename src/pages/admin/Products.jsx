@@ -1,24 +1,31 @@
 import React, { useState } from 'react'
 import { Plus, Edit2, Trash2, X, Upload } from 'lucide-react'
 
-const INITIAL_PRODUCTS = [
-  { id: 1, name: 'Radar EV Path', brand: 'Oakley', price: 4499, stock: 25, status: 'active' },
-  { id: 2, name: 'SPR 17W Symbole', brand: 'Prada', price: 5999, stock: 15, status: 'active' },
-  { id: 3, name: 'Panthère de Cartier', brand: 'Cartier', price: 7499, stock: 10, status: 'active' },
-  { id: 4, name: 'Hearts IV', brand: 'Chrome Hearts', price: 8999, stock: 8, status: 'active' },
-  { id: 5, name: 'DL0325', brand: 'Diesel', price: 3499, stock: 30, status: 'active' },
-  { id: 6, name: 'Millionaires', brand: 'Louis Vuitton', price: 9999, stock: 5, status: 'active' },
-]
+
 
 const BRANDS = ['Oakley', 'Prada', 'Cartier', 'Chrome Hearts', 'Diesel', 'Louis Vuitton', 'Lacoste', 'Versace']
 
 const Products = () => {
-  const [products, setProducts] = useState(INITIAL_PRODUCTS)
+  const [products, setProducts] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
   const [formData, setFormData] = useState({
     name: '', brand: 'Oakley', price: '', stock: '', description: '',
   })
+
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('/api/products')
+      const data = await res.json()
+      if (res.ok) setProducts(data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  React.useEffect(() => {
+    fetchProducts()
+  }, [])
 
   const openAddForm = () => {
     setEditingProduct(null)
@@ -38,30 +45,46 @@ const Products = () => {
     setShowForm(true)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (editingProduct) {
-      setProducts(prev => prev.map(p =>
-        p.id === editingProduct.id
-          ? { ...p, ...formData, price: parseFloat(formData.price), stock: parseInt(formData.stock) }
-          : p
-      ))
-    } else {
-      const newProduct = {
-        id: Date.now(),
-        ...formData,
-        price: parseFloat(formData.price),
-        stock: parseInt(formData.stock),
-        status: 'active',
-      }
-      setProducts(prev => [...prev, newProduct])
+    const payload = {
+      ...formData,
+      price: parseFloat(formData.price),
+      stock: parseInt(formData.stock)
     }
-    setShowForm(false)
+
+    try {
+      if (editingProduct) {
+        const res = await fetch(`/api/products/${editingProduct.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        if (res.ok) await fetchProducts()
+      } else {
+        const res = await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        if (res.ok) await fetchProducts()
+      }
+      setShowForm(false)
+    } catch (err) {
+      console.error(err)
+      alert('Error saving product')
+    }
   }
 
-  const deleteProduct = (id) => {
+  const deleteProduct = async (id) => {
     if (confirm('Are you sure you want to delete this product?')) {
-      setProducts(prev => prev.filter(p => p.id !== id))
+      try {
+        const res = await fetch(`/api/products/${id}`, { method: 'DELETE' })
+        if (res.ok) await fetchProducts()
+      } catch (err) {
+        console.error(err)
+        alert('Error deleting product')
+      }
     }
   }
 

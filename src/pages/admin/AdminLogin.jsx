@@ -8,14 +8,24 @@ const AdminLogin = () => {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
-    // Simple hardcoded admin for initial setup — replace with proper auth later
-    if (email === 'admin@voidvision.com' && password === 'voidvision2026') {
-      localStorage.setItem('vv_admin_auth', 'true')
-      navigate('/admin')
-    } else {
-      setError('Invalid credentials')
+    setError('')
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        localStorage.setItem('vv_admin_auth', 'true')
+        navigate('/admin')
+      } else {
+        setError(data.error || 'Invalid credentials')
+      }
+    } catch (err) {
+      setError('Connection failed. Please try again.')
     }
   }
 
