@@ -1,0 +1,13 @@
+name = "void-vision"
+pages_build_output_dir = "dist"
+
+# Cloudflare D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "void-vision-db"
+database_id = "5add49df-5c40-4645-8c96-3b41bd64dd98"
+
+# Cloudflare R2 Storage (for product images)
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "void-vision-assets"
