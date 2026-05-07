@@ -9,9 +9,16 @@ const Products = () => {
   const [products, setProducts] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [toastMessage, setToastMessage] = useState(null)
   const [formData, setFormData] = useState({
-    name: '', brand: 'Oakley', price: '', stock: '', description: '',
+    name: '', brand: 'Oakley', price: '', stock: '', description: '', status: 'active',
   })
+
+  const showToast = (message, type = 'success') => {
+    setToastMessage({ message, type })
+    setTimeout(() => setToastMessage(null), 3000)
+  }
 
   const fetchProducts = async () => {
     try {
@@ -29,7 +36,7 @@ const Products = () => {
 
   const openAddForm = () => {
     setEditingProduct(null)
-    setFormData({ name: '', brand: 'Oakley', price: '', stock: '', description: '' })
+    setFormData({ name: '', brand: 'Oakley', price: '', stock: '', description: '', status: 'active' })
     setShowForm(true)
   }
 
@@ -41,12 +48,14 @@ const Products = () => {
       price: product.price.toString(),
       stock: product.stock.toString(),
       description: product.description || '',
+      status: product.status || 'active',
     })
     setShowForm(true)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setIsSaving(true)
     const payload = {
       ...formData,
       price: parseFloat(formData.price),
@@ -60,19 +69,31 @@ const Products = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         })
-        if (res.ok) await fetchProducts()
+        if (res.ok) {
+          await fetchProducts()
+          showToast('Product updated successfully')
+        } else {
+          showToast('Failed to update product', 'error')
+        }
       } else {
         const res = await fetch('/api/products', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         })
-        if (res.ok) await fetchProducts()
+        if (res.ok) {
+          await fetchProducts()
+          showToast('Product added successfully')
+        } else {
+          showToast('Failed to add product', 'error')
+        }
       }
       setShowForm(false)
     } catch (err) {
       console.error(err)
-      alert('Error saving product')
+      showToast('Error saving product', 'error')
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -80,10 +101,15 @@ const Products = () => {
     if (confirm('Are you sure you want to delete this product?')) {
       try {
         const res = await fetch(`/api/products/${id}`, { method: 'DELETE' })
-        if (res.ok) await fetchProducts()
+        if (res.ok) {
+          await fetchProducts()
+          showToast('Product deleted successfully')
+        } else {
+          showToast('Failed to delete product', 'error')
+        }
       } catch (err) {
         console.error(err)
-        alert('Error deleting product')
+        showToast('Error deleting product', 'error')
       }
     }
   }
@@ -101,6 +127,24 @@ const Products = () => {
           <Plus size={16} /> Add Product
         </button>
       </div>
+
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '2rem',
+          right: '2rem',
+          background: toastMessage.type === 'error' ? 'var(--danger)' : 'var(--success)',
+          color: 'white',
+          padding: '1rem 2rem',
+          borderRadius: '4px',
+          fontWeight: 600,
+          zIndex: 9999,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+          animation: 'fadeIn 0.3s forwards'
+        }}>
+          {toastMessage.message}
+        </div>
+      )}
 
       {/* Product Form Modal */}
       {showForm && (
@@ -132,15 +176,29 @@ const Products = () => {
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Brand</label>
-                <select
-                  className="form-select"
-                  value={formData.brand}
-                  onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                >
-                  {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Brand</label>
+                  <select
+                    className="form-select"
+                    value={formData.brand}
+                    onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                  >
+                    {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Status</label>
+                  <select
+                    className="form-select"
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="out_of_stock">Out of Stock</option>
+                  </select>
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -198,8 +256,8 @@ const Products = () => {
                 <button type="button" className="btn-outline" onClick={() => setShowForm(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
-                  {editingProduct ? 'Save Changes' : 'Add Product'}
+                <button type="submit" className="btn-primary" disabled={isSaving}>
+                  {isSaving ? 'Saving...' : editingProduct ? 'Save Changes' : 'Add Product'}
                 </button>
               </div>
             </form>

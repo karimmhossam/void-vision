@@ -16,19 +16,25 @@ export async function onRequestPut(context) {
     let values = [];
     if (name) { updates.push('name = ?'); values.push(name); }
     if (brand) { updates.push('brand = ?'); values.push(brand); }
-    if (price !== undefined) { updates.push('price = ?'); values.push(price); }
+    if (price !== undefined && !isNaN(price)) { updates.push('price = ?'); values.push(Number(price)); }
     if (description !== undefined) { updates.push('description = ?'); values.push(description); }
-    if (stock !== undefined) { updates.push('stock = ?'); values.push(stock); }
-    // If status existed in DB we'd update it here
+    if (stock !== undefined && !isNaN(stock)) { updates.push('stock = ?'); values.push(Number(stock)); }
+    if (status !== undefined) { updates.push('status = ?'); values.push(status); }
     
     if (updates.length === 0) {
       return new Response(JSON.stringify({ error: 'No fields to update' }), { status: 400 });
     }
 
-    values.push(id);
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    values.push(Number(id));
+    
     const query = `UPDATE products SET ${updates.join(', ')} WHERE id = ?`;
     
-    await env.DB.prepare(query).bind(...values).run();
+    const result = await env.DB.prepare(query).bind(...values).run();
+    
+    if (result.meta && result.meta.changes === 0) {
+      return new Response(JSON.stringify({ error: 'Product not found' }), { status: 404 });
+    }
     
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

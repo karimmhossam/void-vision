@@ -8,6 +8,7 @@ import AdminLogin from './pages/admin/AdminLogin'
 import Dashboard from './pages/admin/Dashboard'
 import Products from './pages/admin/Products'
 import Orders from './pages/admin/Orders'
+import Settings from './pages/admin/Settings'
 
 import ShopPage from './pages/ShopPage'
 import BrandsPage from './pages/BrandsPage'
@@ -30,6 +31,7 @@ function App() {
         <Route index element={<Dashboard />} />
         <Route path="products" element={<Products />} />
         <Route path="orders" element={<Orders />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>
   )

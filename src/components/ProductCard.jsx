@@ -1,15 +1,24 @@
-import React from 'react'
+import React, { useState } from 'react'
 import ProductCarousel from './ProductCarousel'
-import { ShoppingBag } from 'lucide-react'
+import { ShoppingBag, Check } from 'lucide-react'
+import { useCart } from '../context/CartContext'
 
 const ProductCard = ({ product }) => {
   const { name, brand, price, images } = product
+  const { addToCart } = useCart()
+  const [added, setAdded] = useState(false)
   
   let parsedImages = []
   try {
     parsedImages = typeof images === 'string' ? JSON.parse(images) : (Array.isArray(images) ? images : [])
   } catch (e) {
     parsedImages = []
+  }
+
+  const handleAddToCart = () => {
+    addToCart(product)
+    setAdded(true)
+    setTimeout(() => setAdded(false), 2000)
   }
 
   return (
@@ -22,8 +31,12 @@ const ProductCard = ({ product }) => {
         <div className="product-card-name">{name}</div>
         <div className="product-card-actions">
           <span className="product-card-price">EGP {price?.toLocaleString()}</span>
-          <button className="btn-outline btn-small">
-            <ShoppingBag size={14} /> Add
+          <button 
+            className={`btn-outline btn-small ${added ? 'added' : ''}`}
+            onClick={handleAddToCart}
+            style={added ? { borderColor: 'var(--success)', color: 'var(--success)' } : {}}
+          >
+            {added ? <><Check size={14} /> Added</> : <><ShoppingBag size={14} /> Add</>}
           </button>
         </div>
       </div>
